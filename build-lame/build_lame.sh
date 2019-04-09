@@ -9,11 +9,8 @@ SOURCE="lame-3.100"
 
 CWD=`pwd`
 SROUCE_DIR="$CWD/$SOURCE"
-cd $SROUCE_DIR
-make distclean
-cd $CWD
 
-FAT="fat-lame"
+FAT="fat-$SOURCE"
 
 SCRATCH="scratch"
 # must be an absolute path  
@@ -42,6 +39,10 @@ fi
 
 if [ "$COMPILE" ]  
 then
+	cd $SROUCE_DIR
+	make distclean
+	cd $CWD
+	
 	for ARCH in $ARCHS  
 	do  
 		echo "building $ARCH..."  
