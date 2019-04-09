@@ -1,26 +1,26 @@
 #!/bin/sh  
 
-#make distclean  
-
 CONFIGURE_FLAGS="--disable-shared --disable-frontend"  
 
+#ARCHS="arm64 x86_64 i386 armv7 armv7s"
 ARCHS="armv7 arm64 x86_64"  
+# directories
+SOURCE="lame-3.100"
 
-# SOURCE是下载lame源码包，解压后的目录，可以把sh脚本放到这个目录，source改为""  
-SOURCE=""  
-# FAT是所有指令集build后，输出的目录，所有静态库被合并成一个静态库  
+CWD=`pwd`
+SROUCE_DIR="$CWD/$SOURCE"
+cd $SROUCE_DIR
+make distclean
+cd $CWD
+
 FAT="fat-lame"
 
-# SCRATCH是下载lame源码包，解压后的目录，必须是绝对路径  
-SCRATCH=`pwd`
-echo $SCRATCH
+SCRATCH="scratch"
 # must be an absolute path  
-# THIN 各自指令集build后输出的静态库所在的目录，每个指令集为一个静态库  
-THIN=$SCRATCH/"thin"  
-echo $THIN
-  
-COMPILE=""  
-LIPO="y"  
+THIN=`pwd`/"thin"
+
+COMPILE="y"
+LIPO=""
 
 
 if [ "$*" ]
@@ -41,50 +41,54 @@ fi
 
 
 if [ "$COMPILE" ]  
-then  
-	CWD=`pwd`  
-	echo "$CWD/$SOURCE........."  
+then
 	for ARCH in $ARCHS  
 	do  
 		echo "building $ARCH..."  
-		mkdir -p "$THIN/$ARCH"
-#		mkdir -p "$SCRATCH/$ARCH"  
-#		cd "$SCRATCH/$ARCH"
+		mkdir -p "$SCRATCH/$ARCH"
+		cd "$SCRATCH/$ARCH"
+		
+		CFLAGS="-arch $ARCH -fembed-bitcode"
 		
 		if [ "$ARCH" = "i386" -o "$ARCH" = "x86_64" ]  
 		then  
-			PLATFORM="iPhoneSimulator"  
+			PLATFORM="iPhoneSimulator"
 			if [ "$ARCH" = "x86_64" ]  
 			then  
 				SIMULATOR="-mios-simulator-version-min=9.0"  
-				HOST=x86_64-apple-darwin
+				HOST="--host=x86_64-apple-darwin"
 			else  
 				SIMULATOR="-mios-simulator-version-min=9.0"  
-				HOST=i386-apple-darwin
+				HOST="--host=i386-apple-darwin"
 			fi  
 		else  
-			PLATFORM="iPhoneOS"
-			SIMULATOR="-miphoneos-version-min=9.0"
-			HOST=arm-apple-darwin 
+			PLATFORM="iPhoneOS"			
+			if [ "$ARCH" = "arm64" ]
+			then
+				SIMULATOR="-miphoneos-version-min=9.0"
+				HOST="--host=aarch64-apple-darwin"
+			else
+				SIMULATOR="-miphoneos-version-min=9.0"
+				HOST="--host=arm-apple-darwin"
+			fi
 		fi  
 
+		CFLAGS="$CFLAGS $SIMULATOR"
+		
 		XCRUN_SDK=`echo $PLATFORM | tr '[:upper:]' '[:lower:]'`
-		echo $XCRUN_SDK
-		#AS="$CWD/$SOURCE/extras/gas-preprocessor.pl $CC"  
-
+		CC="xcrun -sdk $XCRUN_SDK clang -arch $ARCH "
 		LDFLAGS="$CFLAGS"
 		
-		./configure \
-		--disable-shared \
-		--disable-frontend \
-		--host=$HOST \
-		--prefix="$THIN/$ARCH" \
-		CC="xcrun -sdk $XCRUN_SDK clang -arch $ARCH" \
-		CFLAGS="-arch $ARCH -fembed-bitcode $SIMULATOR" \
-		LDFLAGS="-arch $ARCH -fembed-bitcode $SIMULATOR" 
-
+		$CWD/$SOURCE/configure \
+		    $CONFIGURE_FLAGS \
+		    $HOST \
+		    --prefix="$THIN/$ARCH" \
+		    CC="$CC" \
+		    CFLAGS="$CFLAGS" \
+		    LDFLAGS="$LDFLAGS" 
+		
 		make clean
-		make -j3 install  
+		make -j8 install  
 	done  
 fi  
 
@@ -93,7 +97,6 @@ then
 	echo "building fat binaries..."  
 	mkdir -p $FAT/lib  
 	set - $ARCHS
-	CWD=`pwd`  
 	cd $THIN/$1/lib  
 	for LIB in *.a  
 	do  
