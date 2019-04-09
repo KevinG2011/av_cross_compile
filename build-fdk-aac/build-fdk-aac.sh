@@ -9,7 +9,6 @@ SOURCE="fdk-aac-2.0.0"
 
 CWD=`pwd`
 SROUCE_DIR="$CWD/$SOURCE"
-echo $SROUCE_DIR
 cd $SROUCE_DIR
 make distclean
 cd $CWD
@@ -87,14 +86,14 @@ then
 		    $CONFIGURE_FLAGS \
 		    $HOST \
 		    $CPU \
+		    --prefix="$THIN/$ARCH" \
 		    CC="$CC" \
 		    CXX="$CC" \
 		    CPP="$CC -E" \
 			AS="$AS" \
 		    CFLAGS="$CFLAGS" \
 		    LDFLAGS="$LDFLAGS" \
-		    CPPFLAGS="$CFLAGS" \
-		    --prefix="$THIN/$ARCH"
+		    CPPFLAGS="$CFLAGS"
 
 		make -j8 install
 		cd $CWD
@@ -106,7 +105,6 @@ then
 	echo "building fat binaries..."
 	mkdir -p $FAT/lib
 	set - $ARCHS
-	CWD=`pwd`
 	cd $THIN/$1/lib
 	for LIB in *.a
 	do
