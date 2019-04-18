@@ -109,7 +109,6 @@ then
 	echo "building fat binaries..."
 	mkdir -p $FAT/lib
 	set - $ARCHS
-	CWD=`pwd`
 	cd $THIN/$1/lib
 	for LIB in *.a
 	do
